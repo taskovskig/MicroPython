@@ -12,10 +12,10 @@ from umqtt.simple import MQTTClient
 led = Pin(2, Pin.OUT, value=1)
 
 ### Settings
-WLAN_ESSID = "wlan_ap"
-WLAN_PASSWORD = "wlan_password"
-IOT_ENDPOINT = "xxxxxxxxx.iot.eu-central-1.amazonaws.com"
-THING = "ESP8266-NODEMCU-V3-IOT"
+WLAN_ESSID = "WLAN_AP"
+WLAN_PASSWORD = "AP_PASSWORD"
+IOT_ENDPOINT = "xxxxxxxxxxxxxx-ats.iot.eu-central-1.amazonaws.com"
+THING = "ESP8266-NODEMCU-V3-IOT (YOUR THING ID)"
 TOPIC = "things/measurements"
 THING_SHADOW = "$aws/things/" + THING + "/shadow/update"
 KEY_PATH = "/8266-01.key.der"
@@ -26,7 +26,7 @@ CERT_KEY = None
 CA_CERT = None
 
 ### Initial setup
-# Set pins
+# Set leds and pins
 wlan = network.WLAN(network.STA_IF)
 adc = ADC(0)
 d = dht.DHT22(machine.Pin(4))
@@ -87,12 +87,14 @@ def publishMQTT():
 	}
 	mqtt.publish(
 		topic = 'things/measurements',
-		msg = json.dumps(message)
+		msg = json.dumps(message),
+		qos = 0
 	)
 	message['state']['reported']['connected'] = True
 	mqtt.publish(
 		topic = THING_SHADOW,
-		msg = json.dumps(message)
+		msg = json.dumps(message),
+		qos = 0
 	)
 
 # Connect to MQTT broker
@@ -111,7 +113,7 @@ mqtt = MQTTClient(
 
 connectToWiFi(20)
 
-# LED=on
+# Yellow LED=on
 led.value(0)
 mqtt.connect()
 led.value(1)
@@ -121,10 +123,16 @@ time.sleep(10)
 while True:
 	if not wlan.isconnected():
 		connectToWiFi(20)
-		publishMQTT()
+		try:
+			publishMQTT()
+		except:
+			machine.reset()
 		deviceIdle()
 	else:
-		publishMQTT()
+		try:
+			publishMQTT()
+		except:
+			machine.reset()
 		deviceIdle()
 
 # Disconnect
