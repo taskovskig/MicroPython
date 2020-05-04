@@ -99,12 +99,14 @@ def publishMQTT(d):
 	print(message)
 	mqtt.publish(
 		topic = TOPIC,
-		msg = json.dumps(message)
+		msg = json.dumps(message),
+		qos = 0
 	)
 	message['state']['reported']['connected'] = True
 	mqtt.publish(
 		topic = THING_SHADOW,
-		msg = json.dumps(message)
+		msg = json.dumps(message),
+		qos = 0
 	)
 
 # Connect to MQTT broker
@@ -122,13 +124,16 @@ mqtt = MQTTClient(
 )
 
 connectToWiFi(20)
-deviceIdle(5)
-mqtt.connect()
+try:
+	mqtt.connect()
+except:
+	machine.reset()
 
 # Publish measurements
 while True:
 	if not wlan.isconnected():
 		connectToWiFi(20)
+	try:
 		r = sds011Meas()
 		print(r)
 		if r["status"] == "OK":
@@ -136,13 +141,8 @@ while True:
 		print()
 		print("Waiting for 30 seconds...")
 		deviceIdle(30)
-	else:
-		r = sds011Meas()
-		print(r)
-		if r["status"] == "OK":
-			publishMQTT(r)
-		print()
-		print("Waiting for 30 seconds...")
-		deviceIdle(30)
+	except:
+		machine.reset()
 
+mqtt.disconnect()
 sys.exit()
